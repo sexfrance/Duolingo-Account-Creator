@@ -35,6 +35,10 @@
 
 ---
 
+### ⭐ Milestones
+**15 stars**: Adding humanization
+
+---
 ### 📝 Usage
 
 1. **Preparation**:
