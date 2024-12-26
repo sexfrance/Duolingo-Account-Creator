@@ -1,0 +1,5 @@
+logmagix==2.0.8
+TempMail==3.0
+tempmail_lol2==3.0.0
+tls_client==1.0.1
+toml==0.10.2

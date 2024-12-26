@@ -1,0 +1,17 @@
+[ profile ]
+addUser  = true  # ./data/usernames.txt
+addAvatar = false  # ./data/avatars/         !!!! NOT WORKING !!!
+addLanguage = false # Random language from ./language_codes.txt
+addCourseLanguage = false # Random course language ./current_course_id.txt
+
+[ data ]
+password = "GenBySexfrance@2024" # "" = Random
+mode = "verified"  # "verified" (3), "claimed" (2), "unclaimed" (1) Verified for email verified, claimed for unverified email, unclaimed for new none-profiled account
+
+[ email ]
+tempmail_lol_api_key = "" # Optional you can leave blank "" but you will have temp mail rate limits
+
+[ dev ]
+Proxyless = true
+Debug = false
+Threads = 1 # Number of threads
