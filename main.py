@@ -9,18 +9,16 @@ import ctypes
 import threading
 import concurrent.futures
 
+from cybertemp import CyberTemp
 from collections import namedtuple
-from TempMail import TempMail
 from functools import wraps
 from logmagix import Logger, Home
-
 
 with open('input/config.toml') as f:
     config = toml.load(f)
 
 DEBUG = config['dev'].get('Debug', False)
 log = Logger()
-tmp = TempMail(config['email'].get('tempmail_lol_api_key'))
 
 def debug(func_or_message, *args, **kwargs) -> callable:
     if callable(func_or_message):
@@ -39,7 +37,6 @@ def debug_response(response) -> None:
     debug(response.text)
     debug(response.status_code)
     debug(response.headers)
-
 
 class Miscellaneous:
     @debug 
@@ -121,11 +118,6 @@ class Miscellaneous:
         email = f"{username}@{domain}"
         return email
 
-    @debug 
-    def generate_inbox(self, domain: str = None, prefix: str = None) -> tuple :
-        inbox = tmp.createInbox(domain, prefix)
-        return inbox
-
     @debug
     def get_proxies(self) -> dict:
         try:
@@ -188,6 +180,8 @@ class AccountCreator:
         }
 
         self.session.proxies = proxy_dict
+
+        self.client = CyberTemp(api_key=config["email"].get("cybertemp_api_key"), debug=DEBUG)
 
     @debug
     def create_unclaimed(self, currentCourseId: str  = "DUOLINGO_EN_FR", from_language: str = "fr") -> tuple:
@@ -265,23 +259,18 @@ class AccountCreator:
             return False
     
     @debug
-    def get_verification_link(self, inbox: tuple, max_attempt: int = 10) -> str:
-        attempt = 0
-
-        log.info(f"Searching email for verification link...")
-        emails = tmp.getEmails(inbox)
-        while attempt < max_attempt:
-            for email in emails:
-                debug(email)
-                if email.sender.endswith("duolingo.com"):
-                    match = re.search(r"https://www\.duolingo\.com/verify/\S+", email.body)
-                    if match:
-                        return match.group(0)   
+    def get_verification_link(self, inbox: str) -> str:
+        url = self.client.extract_url_from_message(
+                    email=inbox,
+                    subject_contains="e-mail",
+                    url_pattern=r'https://www\.duolingo\.com/verify/\S+'
+                )
         
-            attempt += 1
-            time.sleep(1.5)
+        if url: 
+            return url
+        else: 
+            log.failure("Failed to extract verification link from email")
         
-        debug(f"No verification message found after {attempt} attempts")
         return None
     
     @debug
@@ -322,7 +311,7 @@ def create_account() -> None:
     try:
         while True:
             account_time = time.time()
-            log.info("Starting new account generation...")
+            log.info("Starting new account generation process...")
 
             try:
                 Misc = Miscellaneous()
@@ -371,26 +360,23 @@ def create_account() -> None:
                     if not account:
                         log.failure("Failed to create initial unclaimed account")
                         continue
-                    try:
-                        inbox = Misc.generate_inbox()
-                        email = inbox.address
-                    except Exception as e:
-                        log.failure(f"Failed to generate temp email: {str(e)}")
-                        continue
+                    
+                    email = Misc.generate_email("cybertemp.xyz")
                     
                     log.info("Claiming account...")
                     if Account_Generator.claim_account(account.id, email, password, first_name, last_name, account.jwt):
-                        url = Account_Generator.get_verification_link(inbox)
+                        log.info("Getting verification url...")
+                        url = Account_Generator.get_verification_link(email)
                         if not url:
                             log.failure("Failed to receive verification email")
                             continue
                             
-                        log.info(f"Verifying account with url: {url}...")
+                        log.info(f"Got verification url.: {url[:14]}... Verifying...")
                         if Account_Generator.verify_account(url):
                             with open("output/verified/accounts.txt", "a") as f:
                                 f.write(f"{email}:{password}\n")
                             with open("output/verified/full_account_capture.txt", "a") as f:
-                                f.write(f"{account.id}:{email}:{password}:{account.jwt}:{inbox.token}\n")
+                                f.write(f"{account.id}:{email}:{password}:{account.jwt}\n")
                             log.message(f"Duolingo", f'Successfully created verified account: {email}:{password[:8]}...', account_time, time.time())
                         else:
                             log.failure("Failed to verify account")

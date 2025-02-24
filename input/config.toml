@@ -9,7 +9,7 @@ password = "GenBySexfrance@2024" # "" = Random
 mode = "verified"  # "verified" (3), "claimed" (2), "unclaimed" (1) Verified for email verified, claimed for unverified email, unclaimed for new none-profiled account
 
 [ email ]
-tempmail_lol_api_key = "" # Optional you can leave blank "" but you will have temp mail rate limits
+cybertemp_api_key = "" # Optional you can leave blank "" but you will have 1s delay for each email https://cybertemp.xyz/pricing
 
 [ dev ]
 Proxyless = true
